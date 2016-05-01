@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 	re.seed(seed);
 	std::uniform_int_distribution<std::int_fast32_t> idGenerator;
 	std::cout << idGenerator.min() << std::endl;*/
-//	Simulator simul;
-	//("./simulation_01.cfg");
+	Simulator simul;
+	simul.runSimulation("./simulation_01.cfg");
 	return 0;
 }
