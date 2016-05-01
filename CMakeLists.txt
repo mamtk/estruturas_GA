@@ -1,5 +1,5 @@
 project(estruturas_GA)
 cmake_minimum_required(VERSION 2.8.9)
 aux_source_directory(. SRC_LIST)
-add_executable(${PROJECT_NAME} ${SRC_LIST})
+add_executable(${PROJECT_NAME} ${SRC_LIST} util.hh)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_range_for)

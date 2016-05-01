@@ -1,44 +1,79 @@
 #pragma once
 
+#include <random>
+#include <map>
+#include <chrono>
+#include <memory>
 
-/*
- * Simulator: basicamente um factory method para SessionMon e Station,
- *  que instancia as classes de simulação
- */
-class Simulator {
-
-};
+#include "util.hh"
 
 // inspiração para o observer estilo C++11 obtida de:
 //  https://juanchopanzacpp.wordpress.com/2013/02/24/simple-observer-pattern-implementation-c11/
-class ClockObserver;
-
 class ClockSubject {
 	using Observer = std::function<void(char)> const&;
 	using ObserverP = void(*)(char);
-public:
 
-	void registerObserver(Observer observer) {
-	  _mObservers.push_back(std::forward<Observer>(observer));
+public:
+//	ClockSubject(std::default_random_engine* rePointer) : randEngine(rePointer) {}
+	ClockSubject() {
+		std::size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+		_randEngine.seed(seed);
 	}
 
-	void unregisterObserver(ObserverP observer) { // tão funcional, tão hipster...
-		// se eu pudesse usar C++14...
-		//_mObservers.erase(std::remove_if(_mObservers.begin(), _mObservers.end(), [&_mObservers](const auto &x)
-		_mObservers.erase(std::remove_if(_mObservers.begin(), _mObservers.end(), [observer](Observer x)
-		{
-			void (*const* ptr)(char) = x.target<void(*)(char)>();
-			return (ptr && *ptr == observer);
-		}), _mObservers.end());
+	std::size_t registerObserver(Observer observer) {
+		std::size_t newID = 0;
+		do {
+			newID = randGaussian(_randEngine);
+			if(!_mObservers.count(newID)) {
+				_mObservers.insert(std::pair<std::size_t, std::function<void(char)>>(std::move(newID), std::forward<Observer>(observer)));
+				return(newID);
+			}
+		} while (newID);
+		return 0;
+	}
+
+	void unregisterObserver(std::size_t obsID) {
+		for(auto it = _mObservers.begin(), iend = _mObservers.end(); it != iend; ++it) {
+			if(it->first == obsID)
+				it = _mObservers.erase(it);
+		}
 	}
 
 	void notify() const	{
-	  for (const auto& o : _mObservers) o('u');
+	  for (const auto& o : _mObservers) o.second('u'); // such a happy little face
+	}
+
+	static ClockSubject& get(){
+	  static ClockSubject clockSingleton;
+	  return clockSingleton;
 	}
 
    private:
-	std::vector<std::function<void(char)>> _mObservers;
+	std::default_random_engine _randEngine;
+	std::uniform_int_distribution<std::size_t> randGaussian;
+	std::map<std::size_t, std::function<void(char)>> _mObservers;
 };
+
+
+/*
+ * Simulator:
+ */
+class Simulator {
+public:
+	Simulator() {
+		std::size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+		_randEngine.seed(seed);
+//		_mClockSubject = make_unique<ClockSubject>(&_randEngine);
+	}
+
+	void runSimulation(std::string);
+private:
+	void loop();
+
+	std::default_random_engine _randEngine;
+//	std::unique_ptr<ClockSubject> _mClockSubject;
+};
+
 
 class SimulatorClock {
 
