@@ -1,5 +1,6 @@
 #include <fstream>
 #include <string>
+#include <iostream>
 
 #include "Simulator.hh"
 
@@ -42,4 +43,11 @@ void Simulator::runSimulation(std::string file)
 			break;
 		}
 	}
+	// ler dados de usuários válidos no formato "usuario:senha"
+	// iniciar ponteiro para o monitor
+}
+
+void Simulator::logEvent(std::string event)
+{
+	std::cout << event << std::endl;
 }
