@@ -98,7 +98,7 @@ void Simulator::runSimulation(std::string file)
 																 (atof(buf.substr(2).c_str())), nullptr)));
 				_chanceAccumulators[static_cast<int>(configType::MAX_MSG_CAST)] = 0;
 				_vecEventGenerators[static_cast<int>(configType::MAX_MSG_CAST)] = std::uniform_real_distribution<float>(0,\
-							*_config[configType::MAX_MSG].first);
+							*_config[configType::MAX_MSG_CAST].first);
 			break;
 			case '7':   // broadcast terminar
 				_config.insert(std::pair<configType, configValue>\
@@ -106,7 +106,7 @@ void Simulator::runSimulation(std::string file)
 																 (atof(buf.substr(2).c_str())), nullptr)));
 				_chanceAccumulators[static_cast<int>(configType::MAX_TERM_CAST)] = 0;
 				_vecEventGenerators[static_cast<int>(configType::MAX_TERM_CAST)] = std::uniform_real_distribution<float>(0,\
-							*_config[configType::MAX_MSG].first);
+							*_config[configType::MAX_TERM_CAST].first);
 			break;
 			case '8':   // broadcast bloquear
 				_config.insert(std::pair<configType, configValue>\
@@ -114,7 +114,7 @@ void Simulator::runSimulation(std::string file)
 																 (atof(buf.substr(2).c_str())), nullptr)));
 				_chanceAccumulators[static_cast<int>(configType::MAX_BLOCK_CAST)] = 0;
 				_vecEventGenerators[static_cast<int>(configType::MAX_BLOCK_CAST)] = std::uniform_real_distribution<float>(0,\
-							*_config[configType::MAX_MSG].first);
+							*_config[configType::MAX_BLOCK_CAST].first);
 			break;
 			case '9':   // broadcast continuar
 				_config.insert(std::pair<configType, configValue>\
@@ -122,7 +122,7 @@ void Simulator::runSimulation(std::string file)
 																 (atof(buf.substr(2).c_str())), nullptr)));
 				_chanceAccumulators[static_cast<int>(configType::MAX_RESUME_CAST)] = 0;
 				_vecEventGenerators[static_cast<int>(configType::MAX_RESUME_CAST)] = std::uniform_real_distribution<float>(0,\
-							*_config[configType::MAX_MSG].first);
+							*_config[configType::MAX_RESUME_CAST].first);
 			break;
 
 			// outras configurações
@@ -203,7 +203,7 @@ void Simulator::manageEvent(configType type)
 	if(_chanceAccumulators[static_cast<int>(type)] > 1) {
 		double times = 0;
 		modf (_chanceAccumulators[static_cast<int>(type)] , &times);
-		_chanceAccumulators[static_cast<int>(type)] =- times;
+		_chanceAccumulators[static_cast<int>(type)] -= times;
 		for(int i = 0; i < times; ++i) {
 			// evento
 			switch(type) {
@@ -213,7 +213,7 @@ void Simulator::manageEvent(configType type)
 					if(ids.size() < 2)
 						break;
 					std::uniform_int_distribution<int> pickPhrase(0, _phrases.size());
-					std::uniform_int_distribution<std::int_fast16_t> pickStation(0, ids.size()-1);
+					std::uniform_int_distribution<std::int_fast16_t> pickStation(3, ids.size()-1);
 					std::int_fast16_t fromID = pickStation(_randEngine);
 					std::int_fast16_t toID = pickStation(_randEngine);
 					while (toID == fromID) {
@@ -308,7 +308,10 @@ void Simulator::manageEvent(configType type)
 						cmd.type = networkEventType::LOGIN;
 						//cmd.senderID = 0;
 						//cmd.receiverID = 0;
-						cmd.senderName = random_string(pickRandomLength(_randEngine), _randEngine);
+						std::string uname = random_string(pickRandomLength(_randEngine), _randEngine);
+						while(uname.length() < 4)
+							uname = random_string(pickRandomLength(_randEngine), _randEngine);
+						cmd.senderName =
 						cmd.msg = random_string(pickRandomLength(_randEngine), _randEngine);
 						_mMonitor->execute(cmd, std::bind(&Simulator::logEvent, this, std::placeholders::_1));
 					}
@@ -379,7 +382,7 @@ void Simulator::loop()
 		for(int i = 0; i <= static_cast<int>(configType::MAX_RESUME_CAST); ++i) {
 			manageEvent(static_cast<configType>(i));
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(*_config[configType::MIN_CYCLE_TIME].first)));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(*_config[configType::MIN_CYCLE_TIME].first)));
 		ClockSubject::get().notify();
 	}
 	printStats();

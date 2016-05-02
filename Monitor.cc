@@ -36,6 +36,8 @@ void Monitor::execute(netWorkCommandPOD command, std::function<void(std::string)
 									std::to_string(command.receiverID)));
 			break;
 		case networkEventType::LOGIN:
+			if(command.senderName.length() < 3)
+				break;
 			// para evitar side-channel leakeage, na vida real isso seria em tempo constante, sem branch prediction (if)
 			if(_loginData.find(command.senderName) != _loginData.end()) {
 				if(_loginData.find(command.senderName)->second == command.msg) {
