@@ -36,12 +36,15 @@ void Monitor::execute(netWorkCommandPOD command, std::function<void(std::string)
 									std::to_string(command.receiverID)));
 			break;
 		case networkEventType::LOGIN:
-			if(_loginData.find(command.senderName) != _loginData.end())
-				if(_loginData.at(command.senderName).compare(command.msg)) {
-					std::int_fast32_t id =_mNet.addStation(command.senderName);
+			// para evitar side-channel leakeage, na vida real isso seria em tempo constante, sem branch prediction (if)
+			if(_loginData.find(command.senderName) != _loginData.end()) {
+				if(_loginData.find(command.senderName)->second == command.msg) {
+					std::int_fast16_t id =_mNet.addStation(command.senderName);
 					logFunction(std::string("LOGIN ACEITO: " + command.senderName + " @ maquina #" + std::to_string((id))));
+					return;
 				}
-				logFunction(std::string("LOGIN FALHOU: " + command.senderName));
+			}
+			logFunction(std::string("LOGIN FALHOU: " + command.senderName));
 			return;
 			break;
 		case networkEventType::MSG_CAST:

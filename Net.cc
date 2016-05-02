@@ -2,7 +2,7 @@
 
 void Network::broadcast(netWorkCommandPOD cmd, bool onlyToBlocked)
 {
-	std::vector<std::int_fast32_t> targets;
+	std::vector<std::int_fast16_t> targets;
 	if(onlyToBlocked) {
 		targets = getBlockedStations();
 	} else {
@@ -69,9 +69,9 @@ void Network::command(netWorkCommandPOD cmd)
 	}
 }
 
-std::int_fast32_t Network::addStation(std::string uname)
+std::int_fast16_t Network::addStation(std::string uname)
 {
-	std::int_fast32_t newID = 0;
+	std::int_fast16_t newID = 0;
 	bool collision = false;
 	do {
 		newID = idGenerator(*_randEngine);
@@ -84,9 +84,9 @@ std::int_fast32_t Network::addStation(std::string uname)
 	return newID;
 }
 
-std::vector<std::int_fast32_t> Network::getBlockedStations()
+std::vector<std::int_fast16_t> Network::getBlockedStations()
 {
-	std::vector<int_fast32_t> ret;
+	std::vector<int_fast16_t> ret;
 	for(const auto& i : _mClients) {
 		if(i.getBlocked())
 			ret.push_back(i.getID());
@@ -94,9 +94,9 @@ std::vector<std::int_fast32_t> Network::getBlockedStations()
 	return std::move(ret);
 }
 
-std::vector<std::int_fast32_t> Network::getActiveStations()
+std::vector<std::int_fast16_t> Network::getActiveStations()
 {
-	std::vector<int_fast32_t> ret;
+	std::vector<int_fast16_t> ret;
 	for(const auto& i : _mClients) {
 		if(i.getBlocked())
 			ret.push_back(i.getID());
@@ -104,9 +104,9 @@ std::vector<std::int_fast32_t> Network::getActiveStations()
 	return std::move(ret);
 }
 
-std::vector<std::int_fast32_t> Network::getTerminatedStations()
+std::vector<std::int_fast16_t> Network::getTerminatedStations()
 {
-	std::vector<int_fast32_t> ret;
+	std::vector<int_fast16_t> ret;
 	for(const auto& i : _mClients) {
 		if(i.getTerminated())
 			ret.push_back(i.getID());
@@ -114,9 +114,9 @@ std::vector<std::int_fast32_t> Network::getTerminatedStations()
 	return std::move(ret);
 }
 
-std::vector<std::int_fast32_t> Network::getAliveStations()
+std::vector<std::int_fast16_t> Network::getAliveStations()
 {
-	std::vector<int_fast32_t> ret;
+	std::vector<int_fast16_t> ret;
 	for(const auto& i : _mClients) {
 		if(!i.getBlocked())
 			ret.push_back(i.getID());

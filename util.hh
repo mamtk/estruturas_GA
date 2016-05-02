@@ -72,8 +72,8 @@ enum class networkEventType {
 
 struct netWorkCommandPOD {
 	networkEventType type;
-	std::int_fast32_t senderID;     // -1 == Monitor
-	std::int_fast32_t receiverID;   // -1 == broadcast
+	std::int_fast16_t senderID;     // -1 == Monitor
+	std::int_fast16_t receiverID;   // -1 == broadcast
 	std::string senderName;         // username for login
 	std::string msg;                // password for login
 };

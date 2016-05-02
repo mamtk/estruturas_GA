@@ -28,6 +28,7 @@ public:
 	void logEvent(std::string event);
 private:
 	void loop();
+	void printStats();
 
 	enum class configType {
 		MAX_MSG,
@@ -52,7 +53,10 @@ private:
 	std::default_random_engine _randEngine;
 	std::uint_fast32_t _currentCycle;
 	std::unique_ptr<Monitor> _mMonitor;
-	std::map<configType, configValue> _config;
 	std::vector<float> _chanceAccumulators;
 	std::vector<std::uniform_real_distribution<float>> _vecEventGenerators;
+	std::vector<std::string> _phrases;
+	std::map<configType, configValue> _config;
+	std::map<std::string, std::string> _loginDataSet;
+	void manageEvent(configType type);
 };
