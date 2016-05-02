@@ -382,7 +382,7 @@ void Simulator::loop()
 		for(int i = 0; i <= static_cast<int>(configType::MAX_RESUME_CAST); ++i) {
 			manageEvent(static_cast<configType>(i));
 		}
-		//std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(*_config[configType::MIN_CYCLE_TIME].first)));
+		std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(*_config[configType::MIN_CYCLE_TIME].first)));
 		ClockSubject::get().notify();
 	}
 	printStats();
