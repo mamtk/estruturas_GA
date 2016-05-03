@@ -15,7 +15,7 @@ public:
 
 	bool getBlocked() const { return _mBlocked; }
 	bool getTerminated() const { return !(_mAlive); }
-	std::int_fast32_t getID() const { return _mID; }
+	std::int_fast16_t getID() const { return _mID; }
 	std::string getUserName() const { return _userName; }
 
 	void unblock();
@@ -25,7 +25,7 @@ public:
 										  ClockSubject::get().unregisterObserver(_mSubKey); _mSubKey = 0; }
 	void updateTime() { _mActiveTime++; }
 private:
-	std::int_fast32_t _mID;
+	std::int_fast16_t _mID;
 	std::string _userName;
 	std::uint_fast32_t _mStartTime;
 	std::uint_fast32_t _mActiveTime;

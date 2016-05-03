@@ -3,12 +3,12 @@
 
 #include "Monitor.hh"
 
-void Monitor::execute(netWorkCommandPOD command, std::function<void(std::string)> const& logFunction)
+bool Monitor::execute(netWorkCommandPOD command, std::function<void(std::string)> const& logFunction)
 {
 	switch (command.type) {
 		case networkEventType::MSG_ID:
 			if(_mNet.getBlockedID(command.receiverID) || _mNet.getTerminatedID(command.receiverID))
-				return;
+				return false;
 			_mNet.command(command);
 			logFunction(std::string("MENSAGEM: " + command.senderName + "@" +std::to_string((command.senderID)) + \
 									" -> " + _mNet.getUserName(command.receiverID) + "@" + \
@@ -16,21 +16,21 @@ void Monitor::execute(netWorkCommandPOD command, std::function<void(std::string)
 			break;
 		case networkEventType::RESUME_ID:
 			if(!_mNet.getBlockedID(command.receiverID) || _mNet.getTerminatedID(command.receiverID))
-				return;
+				return false;
 			_mNet.command(command);
 			logFunction(std::string("DESBLOQUEAR: MONITOR -> " + _mNet.getUserName(command.receiverID) + "@" + \
 									std::to_string(command.receiverID)));
 			break;
 		case networkEventType::BLOCK_ID:
 			if(_mNet.getBlockedID(command.receiverID) || _mNet.getTerminatedID(command.receiverID))
-				return;
+				return false;
 			_mNet.command(command);
 			logFunction(std::string("BLOQUEAR: MONITOR -> " + _mNet.getUserName(command.receiverID) + "@" + \
 									std::to_string(command.receiverID)));
 			break;
 		case networkEventType::TERMINATE_ID:
 			if(_mNet.getTerminatedID(command.receiverID))
-				return;
+				return false;
 			_mNet.command(command);
 			logFunction(std::string("TERMINAR: MONITOR -> " + _mNet.getUserName(command.receiverID) + "@" + \
 									std::to_string(command.receiverID)));
@@ -43,11 +43,11 @@ void Monitor::execute(netWorkCommandPOD command, std::function<void(std::string)
 				if(_loginData.find(command.senderName)->second == command.msg) {
 					std::int_fast16_t id =_mNet.addStation(command.senderName);
 					logFunction(std::string("LOGIN ACEITO: " + command.senderName + " @ maquina #" + std::to_string((id))));
-					return;
+					return true;
 				}
 			}
 			logFunction(std::string("LOGIN FALHOU: " + command.senderName));
-			return;
+			return false;
 			break;
 		case networkEventType::MSG_CAST:
 			_mNet.broadcast(command);
@@ -69,4 +69,5 @@ void Monitor::execute(netWorkCommandPOD command, std::function<void(std::string)
 			/* ??? */
 			break;
 	}
+	return true;
 }

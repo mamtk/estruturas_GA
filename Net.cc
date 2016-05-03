@@ -74,7 +74,7 @@ std::int_fast16_t Network::addStation(std::string uname)
 	std::int_fast16_t newID = 0;
 	bool collision = false;
 	do {
-		newID = idGenerator(*_randEngine);
+		newID = _idGenerator(*_randEngine);
 		for(const auto& i : _mClients) {
 			if(i.getID() == newID)
 				collision = true;
@@ -84,7 +84,7 @@ std::int_fast16_t Network::addStation(std::string uname)
 	return newID;
 }
 
-std::vector<std::int_fast16_t> Network::getBlockedStations()
+std::vector<std::int_fast16_t> Network::getBlockedStations() const
 {
 	std::vector<int_fast16_t> ret;
 	for(const auto& i : _mClients) {
@@ -94,17 +94,17 @@ std::vector<std::int_fast16_t> Network::getBlockedStations()
 	return std::move(ret);
 }
 
-std::vector<std::int_fast16_t> Network::getActiveStations()
+std::vector<std::int_fast16_t> Network::getActiveStations() const
 {
 	std::vector<int_fast16_t> ret;
 	for(const auto& i : _mClients) {
-		if(i.getBlocked())
+		if(!i.getBlocked())
 			ret.push_back(i.getID());
 	}
 	return std::move(ret);
 }
 
-std::vector<std::int_fast16_t> Network::getTerminatedStations()
+std::vector<std::int_fast16_t> Network::getTerminatedStations() const
 {
 	std::vector<int_fast16_t> ret;
 	for(const auto& i : _mClients) {
@@ -114,7 +114,7 @@ std::vector<std::int_fast16_t> Network::getTerminatedStations()
 	return std::move(ret);
 }
 
-std::vector<std::int_fast16_t> Network::getAliveStations()
+std::vector<std::int_fast16_t> Network::getAliveStations() const
 {
 	std::vector<int_fast16_t> ret;
 	for(const auto& i : _mClients) {

@@ -74,6 +74,7 @@ struct netWorkCommandPOD {
 	networkEventType type;
 	std::int_fast16_t senderID;     // -1 == Monitor
 	std::int_fast16_t receiverID;   // -1 == broadcast
+	std::uint_fast32_t time;
 	std::string senderName;         // username for login
 	std::string msg;                // password for login
 };

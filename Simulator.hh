@@ -58,5 +58,8 @@ private:
 	std::vector<std::string> _phrases;
 	std::map<configType, configValue> _config;
 	std::map<std::string, std::string> _loginDataSet;
+	std::vector<netWorkCommandPOD> _vCommands;
+	std::vector<std::int_fast32_t> _vOnStationsCycle;
+
 	void manageEvent(configType type);
 };
