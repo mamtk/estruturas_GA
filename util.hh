@@ -14,7 +14,7 @@ std::unique_ptr<T> make_unique( Args&& ...args )
 // inspiração para o observer estilo C++11 obtida de:
 //  https://juanchopanzacpp.wordpress.com/2013/02/24/simple-observer-pattern-implementation-c11/
 class ClockSubject {
-	using Observer = std::function<void(char)> const&;
+	using Observer = std::function<void()> const&;
 	using ObserverP = void(*)(char);
 
 public:
@@ -29,7 +29,7 @@ public:
 		do {
 			newID = randGaussian(_randEngine);
 			if(!_mObservers.count(newID)) {
-				_mObservers.insert(std::pair<std::size_t, std::function<void(char)>>(std::move(newID), std::forward<Observer>(observer)));
+				_mObservers.insert(std::pair<std::size_t, std::function<void()>>(std::move(newID), std::forward<Observer>(observer)));
 				return(newID);
 			}
 		} while (newID);
@@ -44,7 +44,7 @@ public:
 	}
 
 	void notify() const	{
-	  for (const auto& o : _mObservers) o.second('u'); // such a happy little face
+	  for (const auto& o : _mObservers) o.second(); //('u'); // such a happy little face
 	}
 
 	static ClockSubject& get(){
@@ -55,7 +55,7 @@ public:
    private:
 	std::default_random_engine _randEngine;
 	std::uniform_int_distribution<std::size_t> randGaussian;
-	std::map<std::size_t, std::function<void(char)>> _mObservers;
+	std::map<std::size_t, std::function<void()>> _mObservers;
 };
 
 enum class networkEventType {
