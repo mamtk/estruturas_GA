@@ -1,11 +1,10 @@
 #include <chrono>
 #include <cstdint>
-#include <fstream>
 #include <functional>
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <algorithm>  //for std::generate_n
+#include <algorithm>
 #include <thread>
 
 #include "Simulator.hh"
@@ -188,6 +187,12 @@ void Simulator::runSimulation(std::string file)
 		_phrases.push_back(buf);
 	}
 	msgsFile.close();
+	// tentar criar arquivo de log
+	_logDesc = new std::ofstream(*_config[configType::PATH_LOG_STORE].second, std::fstream::out);
+	if(!_logDesc->is_open()) {
+		delete _logDesc;
+		_logDesc = nullptr;
+	}
 
 	// finalmente iniciar loop de simulação
 	loop();
@@ -196,6 +201,7 @@ void Simulator::runSimulation(std::string file)
 void Simulator::logEvent(std::string event)
 {
 	std::cout << event << std::endl;
+	*_logDesc << event << std::endl;
 }
 
 void Simulator::manageEvent(configType type)
@@ -450,8 +456,9 @@ void Simulator::printStats()
 	 * Usuário com menor número de tentativas de login
 	 * */
 	auto netState = _mMonitor->getNetworkState();
-	std::cout << "\n\n===============================\n=== ESTATISTICAS FINAIS =======\n===============================\n";
-	std::cout << "Total de ciclos simulados: " << _currentCycle << "\n"\
+	std::ostringstream statOut;
+	statOut << "\n\n===============================\n=== ESTATISTICAS FINAIS =======\n===============================\n";
+	statOut << "Total de ciclos simulados: " << _currentCycle << "\n"\
 		<< "Total de eventos: " << _vCommands.size() << "\nTotal de estacoes ativas no ciclo final: "
 		<< _mMonitor->getActiveStations().size() << "\nTotal de logins: " << _mMonitor->getAllStations().size() << "\n"
 		<< "Total de tentativas de login: "
@@ -479,13 +486,13 @@ void Simulator::printStats()
 		counter += s.getActiveTime();
 	}
 
-	std::cout << counter/_mMonitor->getAllStations().size()
+	statOut << counter/_mMonitor->getAllStations().size()
 	<< "\nMédia de eventos por ciclo: " << static_cast<float>(_vCommands.size())/_currentCycle << "\nMédia de estações online por ciclo simulado: ";
 	counter = 0;
 	for(const auto& i : _vOnStationsCycle)
 		counter += i;
 	counter = static_cast<float>(counter/_currentCycle);
-	std::cout << counter << "\nMédia de logins por ciclo: "
+	statOut << counter << "\nMédia de logins por ciclo: "
 		<< static_cast<float>(_mMonitor->getAllStations().size())/_currentCycle << "\nMédia de tentativas de login por ciclo: " <<
 		static_cast<float>(std::count_if(_vCommands.begin(), _vCommands.end(), [](netWorkCommandPOD c){ return c.type == networkEventType::LOGIN && c.senderID == -1;}))/_currentCycle
 	<< "\nMédia de mensagens individuais por ciclo: "
@@ -519,10 +526,10 @@ void Simulator::printStats()
 		}
 		for(const auto& s : netState)
 			if(s.getActiveTime() == counter)
-				std::cout << "\t " << s.getUserName() << "@" << s.getID() << " com " << s.getActiveTime() << " " << what  << ".\n";
+				statOut << "\t " << s.getUserName() << "@" << s.getID() << " com " << s.getActiveTime() << " " << what  << ".\n";
 	};
 	stationUptimeFilter(true, "ciclos ativos");
-	std::cout << "Estação(ões) ativa menos tempo: \n";
+	statOut << "Estação(ões) ativa menos tempo: \n";
 	stationUptimeFilter(false, "ciclos ativos");
 	auto userStationsUptimeFilter = [&](bool bigger, std::string what) {
 		std::map<std::string, std::int_fast16_t> userCounter;
@@ -545,13 +552,13 @@ void Simulator::printStats()
 		}
 		for(const auto& u : userCounter)
 			if(u.second == counter)
-				std::cout << "\t " << u.first << " com total acumulado de " << u.second << " " << what  << ".\n";
+				statOut << "\t " << u.first << " com total acumulado de " << u.second << " " << what  << ".\n";
 	};
-	std::cout << "Usuário(s) com estações de maior tempo ativo total: \n";
+	statOut << "Usuário(s) com estações de maior tempo ativo total: \n";
 	userStationsUptimeFilter(true, "de tempo ativo total");
-	std::cout << "Usuário(s) com estações de menor tempo ativo total: \n";
+	statOut << "Usuário(s) com estações de menor tempo ativo total: \n";
 	userStationsUptimeFilter(false, "de tempo ativo total");
-	std::cout << "Usuário(s) com maior número de logins: \n";
+	statOut << "Usuário(s) com maior número de logins: \n";
 	auto userEventFilter = [&](bool bigger,std::function<bool(netWorkCommandPOD)> func, std::string what) {
 		std::map<std::string, std::int_fast16_t> userCounter;
 		for(const auto& c : _vCommands) {
@@ -579,18 +586,18 @@ void Simulator::printStats()
 		}
 		for(const auto& v : userCounter)
 			if(v.second == counter)
-				std::cout << "\t" << v.first << " com " << v.second << " " << what  << ".\n";
+				statOut << "\t" << v.first << " com " << v.second << " " << what  << ".\n";
 	};
 	userEventFilter(true, [](netWorkCommandPOD c) -> bool{return c.type == networkEventType::LOGIN && c.senderID != -1;},\
 		std::string("login(s)"));
-	std::cout << ""
-	<< "Usuário(s) com maior número de tentativas de login: \n";
+	statOut << "Usuário(s) com maior número de tentativas de login: \n";
 	userEventFilter(true, [](netWorkCommandPOD c) -> bool{return c.type == networkEventType::LOGIN && c.senderID == -1;},\
 		std::string("tentativas de login"));
-	std::cout << "Usuário(s) com menor número de logins: \n";
+	statOut << "Usuário(s) com menor número de logins: \n";
 	userEventFilter(false, [](netWorkCommandPOD c) -> bool{return c.type == networkEventType::LOGIN && c.senderID != -1;},\
 		std::string("login(s)"));
-	std::cout << "Usuário(s) com menor número de tentativas de login: \n";
+	statOut << "Usuário(s) com menor número de tentativas de login: \n";
 	userEventFilter(false, [](netWorkCommandPOD c) -> bool{return c.type == networkEventType::LOGIN && c.senderID == -1;},\
 		std::string("tentativas de login(s)"));
+	logEvent(statOut.str());
 }

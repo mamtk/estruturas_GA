@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <random>
 #include <map>
 #include <chrono>
@@ -15,13 +16,14 @@
 class Simulator {
 	using configValue = std::pair<std::unique_ptr<float>,std::unique_ptr<std::string>>;
 public:
-	Simulator() : _currentCycle(0) {
+	Simulator() : _currentCycle(0), _logDesc(nullptr) {
 		_chanceAccumulators.reserve(static_cast<int>(configType::NUM_ELEMENTS));
 		_vecEventGenerators.reserve(static_cast<int>(configType::NUM_ELEMENTS));
 		std::size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
 		_randEngine.seed(seed);
 		ClockSubject::get().registerObserver(std::bind(&Simulator::updateTime, this));
 	}
+	~Simulator() { _logDesc->close(); delete _logDesc; }
 
 	void runSimulation(std::string);
 	void updateTime() { _currentCycle++; }
@@ -60,6 +62,7 @@ private:
 	std::map<std::string, std::string> _loginDataSet;
 	std::vector<netWorkCommandPOD> _vCommands;
 	std::vector<std::int_fast32_t> _vOnStationsCycle;
+	std::ofstream* _logDesc;
 
 	void manageEvent(configType type);
 };
