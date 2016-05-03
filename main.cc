@@ -2,8 +2,6 @@
 
 #include "Simulator.hh"
 
-#include "Station.hh"
-
 int main(int argc, char *argv[])
 {
 	Simulator simul;
