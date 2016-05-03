@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstdint>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -448,6 +449,7 @@ void Simulator::printStats()
 	 * Usuário com menor número de logins
 	 * Usuário com menor número de tentativas de login
 	 * */
+	auto netState = _mMonitor->getNetworkState();
 	std::cout << "\n\n===============================\n=== ESTATISTICAS FINAIS =======\n===============================\n";
 	std::cout << "Total de ciclos simulados: " << _currentCycle << "\n"\
 		<< "Total de eventos: " << _vCommands.size() << "\nTotal de estacoes ativas no ciclo final: "
@@ -470,12 +472,16 @@ void Simulator::printStats()
 		   std::count_if(_vCommands.begin(), _vCommands.end(), [](netWorkCommandPOD c){ return c.type == networkEventType::TERMINATE_ID;})
 		<< "\nTotal de broadcasts de terminação: " <<
 		   std::count_if(_vCommands.begin(), _vCommands.end(), [](netWorkCommandPOD c){ return c.type == networkEventType::TERMINATE_CAST;})
-		<< "\nMédia de ciclos ativos por estação: "
-		<< ""
+		<< "\nMédia de ciclos ativos por estação: ";
 
-
-		<< "\nMédia de eventos por ciclo: " << static_cast<float>(_vCommands.size())/_currentCycle << "\nMédia de estações online por ciclo simulado: ";
 	float counter = 0;
+	for (const auto& s : netState) {
+		counter += s.getActiveTime();
+	}
+
+	std::cout << counter/_mMonitor->getAllStations().size()
+	<< "\nMédia de eventos por ciclo: " << static_cast<float>(_vCommands.size())/_currentCycle << "\nMédia de estações online por ciclo simulado: ";
+	counter = 0;
 	for(const auto& i : _vOnStationsCycle)
 		counter += i;
 	counter = static_cast<float>(counter/_currentCycle);
@@ -498,18 +504,61 @@ void Simulator::printStats()
 	<< static_cast<float>(std::count_if(_vCommands.begin(), _vCommands.end(), [](netWorkCommandPOD c){ return c.type == networkEventType::TERMINATE_ID;}))/_currentCycle
 	<< "\nMédia de broadcasts de terminação por ciclo: "
 	<< static_cast<float>(std::count_if(_vCommands.begin(), _vCommands.end(), [](netWorkCommandPOD c){ return c.type == networkEventType::TERMINATE_CAST;}))/_currentCycle
-	<< "\nEstação(ões) ativa mais tempo: "
-	<< ""
-	<< "\nEstação(ões) ativa menos tempo: "
-	<< ""
-	<< "\nUsuário(s)  com estações de maior tempo ativo total: "
-	<< ""
-	<< "\nUsuário(s)  com estações de menor tempo ativo total: "
-	<< ""
-	<< "\nUsuário(s) com maior número de logins: \n";
-	auto userEventFilter = [&](bool bigger,std::function<bool(netWorkCommandPOD)> func) {
+	<< "\nEstação(ões) ativa mais tempo: \n";
+	auto stationUptimeFilter = [&](bool bigger, std::string what) {
+		std::int_fast32_t counter = 0;
+		if(bigger) {
+			for(const auto& s : netState)
+				if(s.getActiveTime() > counter)
+					counter = s.getActiveTime();
+		} else {
+			counter = INT_FAST32_MAX;
+			for(const auto& s : netState)
+				if(s.getActiveTime() < counter)
+					counter = s.getActiveTime();
+		}
+		for(const auto& s : netState)
+			if(s.getActiveTime() == counter)
+				std::cout << "\t " << s.getUserName() << "@" << s.getID() << " com " << s.getActiveTime() << " " << what  << ".\n";
+	};
+	stationUptimeFilter(true, "ciclos ativos");
+	std::cout << "Estação(ões) ativa menos tempo: \n";
+	stationUptimeFilter(false, "ciclos ativos");
+	auto userStationsUptimeFilter = [&](bool bigger, std::string what) {
+		std::map<std::string, std::int_fast16_t> userCounter;
+		for(const auto& s : netState) {
+			auto ret = userCounter.insert(std::pair<std::string, std::int_fast32_t>(s.getUserName(),s.getActiveTime()));
+			// caso já exista a chave, insert retorna um iterador para o elemento
+			if(!ret.second)
+				ret.first->second += s.getActiveTime();
+		}
+		std::int_fast32_t counter = 0;
+		if(bigger) {
+			for(const auto& u : userCounter)
+				if(u.second > counter)
+						counter = u.second;
+		} else {
+			counter = INT_FAST32_MAX;
+			for(const auto& u : userCounter)
+				if(u.second < counter)
+					counter = u.second;
+		}
+		for(const auto& u : userCounter)
+			if(u.second == counter)
+				std::cout << "\t " << u.first << " com total acumulado de " << u.second << " " << what  << ".\n";
+	};
+	std::cout << "Usuário(s) com estações de maior tempo ativo total: \n";
+	userStationsUptimeFilter(true, "de tempo ativo total");
+	std::cout << "Usuário(s) com estações de menor tempo ativo total: \n";
+	userStationsUptimeFilter(false, "de tempo ativo total");
+	std::cout << "Usuário(s) com maior número de logins: \n";
+	auto userEventFilter = [&](bool bigger,std::function<bool(netWorkCommandPOD)> func, std::string what) {
 		std::map<std::string, std::int_fast16_t> userCounter;
 		for(const auto& c : _vCommands) {
+			// filtrar apenas usuários válidos
+			if(_loginDataSet.find(c.senderName) == _loginDataSet.end())
+				continue;
+
 			if(func(c)) {
 				auto ret = userCounter.insert(std::pair<std::string, std::int_fast16_t>(c.senderName,1));
 				// caso já exista a chave, insert retorna um iterador para o elemento
@@ -517,45 +566,31 @@ void Simulator::printStats()
 					ret.first->second++;
 			}
 		}
-		counter = 0;
+		std::int_fast32_t counter = 0;
 		if(bigger) {
 			for(const auto& v : userCounter)
 				if(v.second > counter)
 					counter = v.second;
 		} else {
+			counter = INT_FAST32_MAX;
 			for(const auto& v : userCounter)
 				if(v.second < counter)
 					counter = v.second;
 		}
 		for(const auto& v : userCounter)
 			if(v.second == counter)
-				std::cout << "\t" << v.first << " com " << v.second << " login(s).\n";
+				std::cout << "\t" << v.first << " com " << v.second << " " << what  << ".\n";
 	};
-	userEventFilter(true, [](netWorkCommandPOD c) -> bool{return c.type == networkEventType::LOGIN && c.senderID != -1;});
-/*	std::map<std::string, std::int_fast16_t> userCounter;
-	for(const auto& c : _vCommands) {
-		if(c.type == networkEventType::LOGIN && c.senderID != -1) {
-			auto ret = userCounter.insert(std::pair<std::string, std::int_fast16_t>(c.senderName,1));
-			// caso já exista a chave, insert retorna um iterador para o elemento
-			if(!ret.second)
-				ret.first->second++;
-		}
-	}
-	counter = 0;
-	for(const auto& v : userCounter)
-		if(v.second > counter)
-			counter = v.second;
-	for(const auto& v : userCounter)
-		if(v.second == counter)
-			std::cout << "\t" << v.first << " com " << v.second << " login(s).\n";*/
-
+	userEventFilter(true, [](netWorkCommandPOD c) -> bool{return c.type == networkEventType::LOGIN && c.senderID != -1;},\
+		std::string("login(s)"));
 	std::cout << ""
-	<< "Usuário com maior número de tentativas de login: "
-	<< ""
-	<< "\nUsuário com menor número de logins: "
-	<< ""
-	<< "\nUsuário com menor número de tentativas de login: "
-	<< ""
-	<< "\n";
-
+	<< "Usuário(s) com maior número de tentativas de login: \n";
+	userEventFilter(true, [](netWorkCommandPOD c) -> bool{return c.type == networkEventType::LOGIN && c.senderID == -1;},\
+		std::string("tentativas de login"));
+	std::cout << "Usuário(s) com menor número de logins: \n";
+	userEventFilter(false, [](netWorkCommandPOD c) -> bool{return c.type == networkEventType::LOGIN && c.senderID != -1;},\
+		std::string("login(s)"));
+	std::cout << "Usuário(s) com menor número de tentativas de login: \n";
+	userEventFilter(false, [](netWorkCommandPOD c) -> bool{return c.type == networkEventType::LOGIN && c.senderID == -1;},\
+		std::string("tentativas de login(s)"));
 }

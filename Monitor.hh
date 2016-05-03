@@ -22,6 +22,7 @@ public:
 	bool getBlockedID(std::int_fast16_t id) const { return  _mNet.getBlockedID(id); }
 	bool getTerminatedID(std::int_fast16_t id) const { return _mNet.getTerminatedID(id); }
 	std::string getUserName(std::int_fast16_t id) const { return _mNet.getUserName(id); }
+	std::deque<Station> getNetworkState() { return _mNet.getNetworkState(); }
 	void updateTime() { _time++; }
 private:
 	Network _mNet;

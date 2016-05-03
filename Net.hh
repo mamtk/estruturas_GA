@@ -32,6 +32,7 @@ public:
 		}
 		return std::string();
 	}
+	std::deque<Station> getNetworkState() { return _mClients; }
 
 	void broadcast(netWorkCommandPOD cmd, bool onlyToBlocked = false);
 	void command(netWorkCommandPOD cmd);
